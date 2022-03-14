@@ -1,6 +1,6 @@
-from multiprocessing.spawn import prepare
-from operator import le
-from pydoc import pager
+from itertools import product
+from math import prod
+from urllib import response
 from app.products import base
 from flask import Flask,jsonify,request
 import csv
@@ -67,7 +67,7 @@ def create_products():
 
     f.close()
 
-    return {'message':'Product Created'},201
+    return payload,201
 
 
 
@@ -79,57 +79,51 @@ def patch_base(id):
     body_keys_set=set(body_request.keys())
     expected_key={'name','price'}
     invalid_key=body_keys_set-expected_key
+    reponse=[]
     if invalid_key:
         return {'error':'key not allowed','key_denied':list(invalid_key) },404
 
-    for file in data_base:
-        file['id']=int(file['id'])
-        if id == file['id']:
-            fieldnames = ["id", "name", "price"]
+    product = [product for product in data_base if id == int(product["id"])]
+    if len(product) == 0:
+        return {"error": f"product id {id} not found"}
 
-            payload = {"id": id, "name": body_request['name'], "price":float(body_request['price'])}
-            file.update(payload)
+    for product in data_base:
+        product["id"]=int(product["id"])
+        if product["id"] == id:
+            product["name"] = body_request.get("name", product["name"])
+            product["price"] = body_request.get("price", product["price"])
+            reponse=product
 
-            f = open('FILE_PATH', "w")
+    fieldnames = ["id", "name", "price"]
+    file = open(file_test, "w")
+    result = csv.DictWriter(file, fieldnames=fieldnames)
+    result.writeheader()
+    result.writerows(data_base)
+    file.close()
 
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-
-            writer.writerow(file)
-
-            f.close()
-            return  file
-            
-        else:
-            message={f"error": f'product id {str(id)} not found'},404
-
-    return message
-
-
-
-
-
-
-
+    return reponse, 200
 
 
 @app.delete('/products/<int:id>')
 def delete_base(id):
     data_base=base()
-    for file in data_base:
-        file['id']=int(file['id'])
-        if id == file['id']:
-            fieldnames = ["id", "name", "price"]
+    response=[]
 
-            data_base.remove(file)
+    product=[product for product in data_base if id == int(product["id"])]
+    if len(product)==0:
+        return {"error": f"product id {id} not found"}
 
-            f = open('FILE_PATH', "w")
+    for product in data_base:
+        product["id"]=int(product["id"])
+        if product["id"]==id:
+            data_base.remove(product)
+            response=product
 
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+    fieldnames = ["id", "name", "price"]
+    file = open(file_test, "w")
+    result = csv.DictWriter(file, fieldnames=fieldnames)
+    result.writeheader()
+    result.writerows(data_base)
+    file.close()
 
-            writer.writerow(file)
-
-            f.close()
-            return  file
-            
-        else:
-            message={f"error": f'product id {str(id)} not found'},404
+    return response    
